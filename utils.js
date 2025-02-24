@@ -31,7 +31,7 @@ function stopSample(sampleName) {
 // Create light, heavens and earth
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-  70,
+  60,
   window.innerWidth / window.innerHeight,
   0.01,
   80
@@ -63,7 +63,7 @@ light.shadow.camera.right = 50;
 light.shadow.camera.top = 50;
 light.shadow.camera.bottom = -50;
 scene.add(light);
-// scene.fog = new THREE.Fog(0x3e8191, 0, 32);
+scene.fog = new THREE.Fog(0x555566, 0, 32);
 // scene.fog = new THREE.Fog(0x777777, 0, 64);
 // const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 // ground.receiveShadow = true;
@@ -113,7 +113,7 @@ let thetaInc = 0.002; // Steering sensitivity
 let cameraWhirl = 0;
 let distanceCamera = 1;
 drifting = false;
-
+let oldTheta = 0;
 function checkKeyboard() {
   // Theta steering control
   if (keyboard['ArrowLeft'] || keyboard['a']) {
@@ -151,41 +151,56 @@ function checkKeyboard() {
   if (speed * Math.abs(thetaDelta) > 0.0015) {
     console.log('[!] Burning rubber baby!', Math.random().toFixed(2));
     drifting = true;
-    driftTheta += Math.abs(driftTheta) > 0.01 ? 0.005 : 0.002;
+    // driftTheta += Math.abs(driftTheta) > 0.01 ? 0.005 : 0.002;
+    driftTheta += Math.abs(driftTheta < 0.5)
+      ? 0.01 * (oldTheta < theta ? 1 : -1)
+      : 0;
   } else drifting = false;
+  oldTheta = theta;
 }
 
-// let touchStartX = 0;
-// let touchStartY = 0;
-// let touchEndX = 0;
-// let touchEndY = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
 
-// document.addEventListener('touchstart', (event) => {
-//   touchStartX = event.touches[0].clientX;
-//   touchStartY = event.touches[0].clientY;
-// });
+document.addEventListener('touchstart', (event) => {
+  touchStartX = event.touches[0].clientX;
+  touchStartY = event.touches[0].clientY;
+});
 
-// document.addEventListener('touchmove', (event) => {
-//   touchEndX = event.touches[0].clientX;
-//   touchEndY = event.touches[0].clientY;
-//   let dx = touchEndX - touchStartX;
-//   if (Math.abs(dx) > 16) {
-//     if (dx > 0) {
-//       thetaDelta += 0.005;
-//       playSample('screech');
-//     } else {
-//       thetaDelta -= 0.005;
-//       playSample('screech');
-//     }
-//   }
-//   let dy = touchEndY - touchStartY;
-//   if (Math.abs(dy) > 16) {
-//     if (dy > 0) {
-//       speed -= 0.0025;
-//       playSample('screech');
-//     } else speed += 0.0025;
-//   }
-// });
+document.addEventListener('touchmove', (event) => {
+  touchEndX = event.touches[0].clientX;
+  touchEndY = event.touches[0].clientY;
+  let dx = parseInt(touchEndX) - parseInt(touchStartX);
+  if (Math.abs(dx) > 5) {
+    console.log(touchStartX, touchEndX);
+    if (dx > 0) {
+      console.log('turning left...');
+      thetaDelta += thetaInc;
+      // speed *= 0.99;
+    } else {
+      console.log('turning right...');
+      thetaDelta -= thetaInc;
+      // speed *= 0.99;
+    }
+  }
+  // else
+  {
+    let dy = touchEndY - touchStartY;
+    if (Math.abs(dy) > 10) {
+      if (dy > 0) {
+        speed -= 0.0025;
+        playSample('screech');
+      } else {
+        // speed += 0.0025;
+        if (speed > 0.01) speed *= 1 + (maxSpeedForward - speed) * 0.25;
+        else speed += 0.001;
+        if (drifting) playSample('screech');
+      }
+    }
+  }
+});
 
 // document.addEventListener('touchend', () => {
 //   let deltaX = touchEndX - touchStartX;
