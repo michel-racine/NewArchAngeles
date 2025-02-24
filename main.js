@@ -1,5 +1,5 @@
-// Name:    New Arch Angeles: City of Forever
-// Purpose: Flying simulation game. Player flies through infinite cityscape shooting enemy orbs
+// Name:    New Arch Angeles: Concrete Jungle
+// Purpose: Just drivin' around the city
 // Author:  Michael Root
 // Date:    2025.02.18
 
@@ -18,7 +18,7 @@ let elevationView = 0.1;
 let driftTheta = 0;
 
 let Cubes = []; // Buildings
-// createBuildingCubes(Cubes, 4, 24);
+createBuildingCubes(Cubes, 16, 16);
 
 ////// INITIALIZE CAMERA POSITINO //////
 // First positive intersection
@@ -32,13 +32,13 @@ function updateCamera() {
       2 *
         speed *
         (speed < 0 ? -1 : 1) *
-        Math.cos(theta - thetaDelta + driftTheta * (thetaDelta > 0 ? 1 : -1)),
+        Math.cos(theta - thetaDelta + driftTheta), // * (thetaDelta > 0 ? 1 : -1)),
     elevation,
     camera.position.z +
       2 *
         speed *
         (speed < 0 ? -1 : 1) *
-        Math.sin(theta - thetaDelta + driftTheta * (thetaDelta > 0 ? 1 : -1))
+        Math.sin(theta - thetaDelta + driftTheta) // * (thetaDelta > 0 ? 1 : -1))
   );
 
   camera.position.x += speed * Math.cos(theta - thetaDelta);
@@ -120,10 +120,10 @@ function checkBuildingCollisions() {
     if (x > px - sx && x < px + sx && z > pz - sz && z < pz + sz) {
       // Reduce speed dramatically if is in state of collision
       // TODO: more advanced behaviours should go here...
-      speed *= 0.67;
+      speed *= 0.25;
       playSample('crash');
-      player.position.x = 4;
-      player.position.z = -9;
+      camera.position.x = 4;
+      camera.position.z = -9;
       return;
     }
   }
@@ -151,7 +151,7 @@ function animate() {
   // updatePlayer();
   updateCamera();
   checkKeyboard();
-  // checkBuildingCollisions();
+  checkBuildingCollisions();
 
   // **Render the main scene**
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
