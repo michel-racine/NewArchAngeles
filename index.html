@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>New Arch Angeles</title>
+    <!-- by Michael Root Root 2024 -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAAMTSURBVFhHxZZLyE1RGIb3737/XQq5DBTKn6QkSUoGBoaipIwVylAGJjLRr+SWkVImcikZIZGQTAgDUUTuBu73+/Nwvlqdzjl7nbMH/1tPa59zvr2+d39rfWufrtdF8afoA3XBJ8cffWjgg+P3Dg2kNzlZuwoD/f59akO/4GdtHFD3uZMnyTbg5CZSXg+FA7UxEmvi9//LbGUZMIGTWzYTDIFD8BROwSDw+/i9HRNZBiK5cvSmceD3qj9oUsJEVKVMpQYiScjW6YU3MAwewXUYDqnq72umUgPxVMonvQIugQmmwH64CrsgrZLKWYqWBtIJYm174DJsB9d+L1yD2aDB9J6cZWhpICZwFA6tYhqsg41gB6i5YE+HomqVDaiYyNG+5+Aq3oEtuQ3OwRdYBP5mbDtVyK6A5b0PJn0Fb6EbnGAV2BUDwTjNhokyAy2P4vTgGQyHQRNLwW64BctgJ7gxl4DLMQu8VzMqxlSazD6KLb0T3oPzYMvJcrgJJ+EuPIaLoFkn1riJWqm0ApbVpKfBvrcLjsBWeAjHwZiRsBJuw0xYAHE2VKqA/T4HFsMEmAwTYR8cBZNuAA8kl+UZXAArY+Uq7QGTu5l0a8vtAHf8GbgDu0FzdoV7YD2sAFvUp489pJF6ZVfAAE3YYm4+Tz+r4LXLcRa+wmdwT0wHl8MzI0ctK2Bif4yWci397PgADsINWAiTwE1oS6ZdYHzHFTDICWJ0UpfFF9Gx2mdfyaPAc2ALmNwY71ExNlPpXzKTOElUwx1/AjyMZsBHeAnzYR58A+Pjybyu1AUGmthAr8UT0FfwCDChr+c98AIsd8SpsgRZBkIGWxHX3T5312tgM/gu8KAyJp00vb+RSpdAmVQ5mcG25CXwv4HfjQffDathLBgTVWv2hN6XfRTXB3ngeDD5H+AJTIVNMAbSp8mZPNtAPL2juNPfw2h4Dira1bhGG6+RsgwoJzQ4SuvarwGfei14GMXvxmoyR1l7IJXB0ZLKN59mlEmjWmUyxj3QtoFU6Y25TxwKA9lL0EhOEnSqSgaqqyj+AjC42v9K08JzAAAAAElFTkSuQmCC" />
+    <style>
+      body {
+        overflow: hidden;
+        margin: 0;
+        background-color: black;
+        cursor: none;
+      }
+      canvas {
+        display: block;
+      }
+      #canvasOverlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvasOverlay"></canvas>
+    <script src="three.min.js"></script>
+    <script src="GLTFLoader.js"></script>
+    <script src="geomats.js"></script>
+    <script src="utils.js"></script>
+    <script src="main.js"></script>
+    <!-- <script>
+      function goFullScreen() {
+        let elem = document.documentElement; // Fullscreen entire page
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen();
+        } else if (elem.mozRequestFullScreen) {
+          elem.mozRequestFullScreen();
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      }
+      // Auto full-screen when tapping anywhere (optional)
+      document.addEventListener('click', goFullScreen);
+    </script> -->
+  </body>
+</html>
