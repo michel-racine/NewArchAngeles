@@ -1,226 +1,150 @@
-// Name:    utils.js
-// Purpose: Creates scene, skybox, audio player, keyboard input handling
-// Date:    2025.02.16
+// Name:    New Arch Angeles: Concrete Jungle
+// Purpose: Just drivin' around the city
 // Author:  Michael Root
+// Date:    2025.02.18
 
-//////////////////////////////////////////////////////////////////////
-/////////                 SCENE SETUP                         ////////
-//////////////////////////////////////////////////////////////////////
-// Audio player
-// Preload audio files
-const audioFiles = {
-  screech: new Audio('Audio/burningRubber.mp3'),
-  crash: new Audio('Audio/crash.mp3'),
-};
+////////////////////////////////////////////////////////////////////////////////////////////
+/////////                          VARIABLES ET AL                                  ////////
+////////////////////////////////////////////////////////////////////////////////////////////
+let counter = 0;
+let xPos = 0; // Imaginary world positions
+let yPos = 1; //
+let zPos = 0; //
+let speed = 0.005; // Also considered radius
+let theta = Math.PI;
+let thetaDelta = 0.0;
+let elevation = 0.05;
+let elevationView = 0.1;
+let driftTheta = 0;
 
-// Function to play a sample based on its name
+let Cubes = []; // Buildings
+createBuildingCubes(Cubes, 16, 16);
 
-const sample = audioFiles['screech'];
+////// INITIALIZE CAMERA POSITINO //////
+// First positive intersection
+// camera.position.set(8, elevation, 8.5);
+camera.position.set(16, elevation, 8);
 
-function playSample(sampleName) {
-  if (sample.paused) {
-    // sample.volume = Math.min(Math.abs(speed) * 15, 1);
-    if (sampleName == 'screech') sample.volume = speed / maxSpeedForward;
-    else sample.volume = speed / maxSpeedForward;
-    sample.play();
-  }
-}
-function stopSample(sampleName) {
-  const sample = audioFiles[sampleName];
-  if (!sample.paused) {
-    sample.pause(); // Stop if playing, then play it
-    sample.currentTime = 0; // Reset to the start
-  }
-}
-// Create light, heavens and earth
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.01,
-  80
-);
-scene.add(camera);
-camera.lookAt(0, 0, 0);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-document.body.appendChild(renderer.domElement);
-const ambientLight = new THREE.AmbientLight(0xffeeee, 0.67);
-scene.add(ambientLight);
+let viewVerticalOffset = 0.1;
+function updateCamera() {
+  camera.lookAt(
+    camera.position.x +
+      2 * speed * (speed < 0 ? -1 : 1) * Math.cos(theta - thetaDelta),
+    elevation,
+    camera.position.z +
+      2 * speed * (speed < 0 ? -1 : 1) * Math.sin(theta - thetaDelta)
+  );
+  driftTheta *= 0.95;
 
-const light = new THREE.DirectionalLight(0xeeeeff, 0.5);
-light.position.set(0, 10, 0); // Adjust light position as needed
-light.castShadow = true;
-light.shadow.bias = -0.05; // Try values between -0.005 and -0.05
-light.shadow.mapSize.width = 1024; // Resolution of the shadow map
-light.shadow.mapSize.height = 1024;
-light.shadow.camera.near = 0.1; // Shadow camera near plane
-light.shadow.camera.far = 500; // Shadow camera far plane
-light.shadow.camera.left = -50;
-light.shadow.camera.right = 50;
-light.shadow.camera.top = 50;
-light.shadow.camera.bottom = -50;
-scene.add(light);
-scene.fog = new THREE.Fog(0x555566, 0, 32);
+  camera.position.x += speed * Math.cos(theta - thetaDelta);
+  camera.position.y = elevation;
+  camera.position.z += speed * Math.sin(theta - thetaDelta);
 
-scene.add(ground);
+  theta += thetaDelta * (speed < 0 ? -1 : 1);
 
-// Make the renderer responsive
-window.addEventListener('resize', () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-});
+  thetaDelta *= 0.94;
 
-const keyboard = {};
-window.addEventListener('keydown', function (e) {
-  keyboard[e.key] = true;
-});
+  while (theta < 0) theta += Math.PI * 2;
+  theta %= Math.PI * 2;
+} // End updateCamera()
 
-// Clean up keyboard entries, remove keys when not pressed
-window.addEventListener('keyup', function (e) {
-  keyboard[e.key] = false;
-  delete keyboard[e.key];
-});
+let thetaPlayer = 0;
+let thetaPlayerTarget = 0;
+let thetaPlayerInc = 0.025;
+let speedPlayer = 0.03;
+let chooseNewPath = true;
+let drift = 0.001;
 
-function makeSkyBox() {
-  const loader = new THREE.CubeTextureLoader();
-  const texture = loader.load([
-    // x+, x, y...
-    'Images/sunset.png',
-    'Images/sunset.png',
-    'Images/sky.png',
-    'Images/ground.png',
-    'Images/sunset.png',
-    'Images/sunset.png',
-  ]);
-  scene.background = texture;
-}
+function updatePlayer() {
+  if (!player) return;
+  player.position.x += speedPlayer * Math.cos(thetaPlayer);
+  player.position.y = -0.035;
+  player.position.z += speedPlayer * Math.sin(thetaPlayer);
+  player.rotation.y = -thetaPlayer + Math.PI / 2;
 
-let maxSpeedForward = 0.125;
-let maxSpeedReverse = -0.01;
+  // // Artificial jiggle so that vehicle model isn't as stark looking
+  // thetaPlayer += (Math.random() * 2 - 1) * 0.1 * speedPlayer;
+  while (thetaPlayer < 0) thetaPlayer += Math.PI * 2;
+  thetaPlayer %= Math.PI * 2;
+  var d = thetaPlayer % (Math.PI / 2);
+  // thetaPlayer += drift * (d < Math.PI / 2 ? -1 : 1);
 
-let speedInc = 0.003;
-let thetaInc = 0.002; // Steering sensitivity
-
-drifting = false;
-let oldTheta = 0;
-function checkKeyboard() {
-  // Theta steering control
-  if (keyboard['ArrowLeft'] || keyboard['a']) {
-    thetaDelta -= thetaInc;
-    speed *= 0.98;
-    if (drifting) playSample('screech');
-  }
-  if (keyboard['ArrowRight'] || keyboard['d']) {
-    thetaDelta += thetaInc;
-    speed *= 0.98;
-    if (drifting) playSample('screech');
-  }
-  if (keyboard['w']) {
-    speedPlayer += 0.001;
-  }
-  if (keyboard['s']) {
-    speedPlayer -= 0.001;
-  }
-
-  // Speed control
-  if (keyboard['ArrowUp'] || keyboard['w']) {
-    if (speed > 0.01) speed *= 1 + (maxSpeedForward - speed) * 0.33;
-    else speed += 0.00125;
-    if (drifting) playSample('screech');
-  }
-
-  if (keyboard['ArrowDown'] || keyboard['s']) {
-    if (speed >= 0.002) speed *= speed > maxSpeedReverse ? 0.97 : 0;
-    else speed -= speed > maxSpeedReverse ? 0.001 : 0;
-  }
-
-  if (speed * Math.abs(thetaDelta) > 0.0015) {
-    console.log('[!] Burning rubber baby!', Math.random().toFixed(2));
-    drifting = true;
-    // driftTheta += Math.abs(driftTheta) > 0.01 ? 0.005 : 0.002;
-    driftTheta += Math.abs(driftTheta < 1)
-      ? 0.01 * (oldTheta < theta ? 1 : -1)
-      : 0;
-  } else drifting = false;
-  oldTheta = theta;
-}
-
-let touchStartX = 0;
-let touchStartY = 0;
-let touchEndX = 0;
-let touchEndY = 0;
-
-document.addEventListener('touchstart', (event) => {
-  touchStartX = event.touches[0].clientX;
-  touchStartY = event.touches[0].clientY;
-});
-
-document.addEventListener('touchmove', (event) => {
-  touchEndX = event.touches[0].clientX;
-  touchEndY = event.touches[0].clientY;
-  let dx = parseInt(touchEndX) - parseInt(touchStartX);
-  if (Math.abs(dx) > 5) {
-    console.log(touchStartX, touchEndX);
-    if (dx > 0) {
-      console.log('turning left...');
-      thetaDelta += thetaInc;
+  if (
+    Math.abs(player.position.x % 8) < speedPlayer ||
+    Math.abs(player.position.z % 8) < speedPlayer
+  ) {
+    if (chooseNewPath == true) {
+      console.log('choosing path!');
+      chooseNewPath = false;
+      thetaPlayerTarget += (Math.PI / 2) * (Math.floor(Math.random * 3) - 1);
+      while (thetaPlayerTarget > Math.PI * 2) thetaPlayerTarget -= Math.PI * 2;
     } else {
-      console.log('turning right...');
-      thetaDelta -= thetaInc;
+      chooseNewPath = true;
     }
   }
-  let dy = touchEndY - touchStartY;
-  if (Math.abs(dy) > 20) {
-    if (dy > 0) {
-      speed -= 0.005;
-      playSample('screech');
-    } else {
-      // speed += 0.0025;
-      if (speed > 0.01) speed *= 1 + (maxSpeedForward - speed) * 0.25;
-      else speed += 0.001;
-      if (drifting) playSample('screech');
+
+  // thetaPlayer = thetaPlayerTarget;
+  thetaPlayer +=
+    thetaPlayerTarget < thetaPlayer ? -thetaPlayerInc : thetaPlayerInc;
+}
+
+function calculateDistance(x0, y0, z0, x1, y1, z1) {
+  var d = Math.sqrt(
+    Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2) + Math.pow(z1 - z0, 2)
+  );
+  return d;
+}
+
+let c = 0.15; // Collision buffer
+function checkBuildingCollisions() {
+  let x = camera.position.x;
+  let z = camera.position.z;
+  for (var i = 0; i < Cubes.length; i++) {
+    let sx = Cubes[i].scale.x / 2 + c;
+    let sz = Cubes[i].scale.z / 2 + c;
+    let px = Cubes[i].position.x;
+    let pz = Cubes[i].position.z;
+
+    if (x > px - sx && x < px + sx && z > pz - sz && z < pz + sz) {
+      // Reduce speed dramatically if is in state of collision
+      // TODO: more advanced behaviours should go here...
+      speed *= 0.25;
+      playSample('crash');
+      camera.position.x = 4;
+      camera.position.z = -9;
+      return;
     }
   }
-});
+} // End checkBuildingCollisions()
 
-// document.addEventListener('touchend', () => {
-//   let deltaX = touchEndX - touchStartX;
-//   let deltaY = touchEndY - touchStartY;
+////////////////////////////////////////////////////////////////////////////////////////////
+/////////                          ANIMATION SECTION                                ////////
+////////////////////////////////////////////////////////////////////////////////////////////
+makeSkyBox();
 
-//   // Horizontal swipe (left/right) → Adjust theta
-//   if (Math.abs(deltaX) > Math.abs(deltaY)) {
-//     if (deltaX > 50) {
-//       // Swipe Right → Turn Right
-//       thetaDelta += 0.05 * (speed >= 0 ? 1 : -1);
-//       speed *= 0.99;
-//       playSample('screech');
-//     } else if (deltaX < -50) {
-//       // Swipe Left → Turn Left
-//       thetaDelta -= 0.05 * (speed >= 0 ? 1 : -1);
-//       speed *= 0.99;
-//       playSample('screech');
-//     }
-//   }
-
-//   // Vertical swipe (up/down) → Adjust speed
-//   else {
-//     if (deltaY < -50) {
-//       // Swipe Up → Accelerate
-//       speed += speed < maxSpeedForward ? 0.001 : 0;
-//     } else if (deltaY > 50) {
-//       // Swipe Down → Decelerate/Reverse
-//       speed -= speed > maxSpeedReverse ? 0.0033 : 0;
-//     }
-//   }
-
-//   // Reset touch positions
-//   touchStartX = 0;
-//   touchStartY = 0;
-//   touchEndX = 0;
-//   touchEndY = 0;
+// Geometry and material for enemy objects
+// const geo1 = new THREE.SphereGeometry(0.1, 16, 16);
+// const mat1 = new THREE.MeshStandardMaterial({
+//   color: 0xff0000, // light silver color
+//   metalness: 0.9, // fully metallic for a chrome-like effect
+//   roughness: 0, // smooth surface for high reflectivity
 // });
+// const originEnemy = new THREE.Mesh(geo1, mat1);
+// originEnemy.castShadow = true;
+// scene.add(originEnemy);
+
+function animate() {
+  // if (player) originEnemy.position.copy(player.position);
+  requestAnimationFrame(animate);
+  // updatePlayer();
+  updateCamera();
+  checkKeyboard();
+  checkBuildingCollisions();
+  sample.volume = speed / maxSpeedForward;
+
+  // **Render the main scene**
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+  renderer.render(scene, camera);
+}
+
+animate();
