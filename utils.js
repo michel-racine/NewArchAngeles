@@ -9,15 +9,19 @@
 // Audio player
 // Preload audio files
 const audioFiles = {
-  screech: new Audio('Audio/skid.wav'),
+  screech: new Audio('Audio/burningRubber.mp3'),
   crash: new Audio('Audio/crash.mp3'),
 };
 
 // Function to play a sample based on its name
+
+const sample = audioFiles['screech'];
+
 function playSample(sampleName) {
-  const sample = audioFiles[sampleName];
   if (sample.paused) {
     // sample.volume = Math.min(Math.abs(speed) * 15, 1);
+    if (sampleName == 'screech') sample.volume = speed / maxSpeedForward;
+    else sample.volume = speed / maxSpeedForward;
     sample.play();
   }
 }
@@ -46,10 +50,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 const ambientLight = new THREE.AmbientLight(0xffeeee, 0.67);
 scene.add(ambientLight);
-// const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-// directionalLight.position.set(5, 10, 7);
-// scene.add(directionalLight);
-// Setup directional light to cast shadows
+
 const light = new THREE.DirectionalLight(0xeeeeff, 0.5);
 light.position.set(0, 10, 0); // Adjust light position as needed
 light.castShadow = true;
@@ -64,13 +65,8 @@ light.shadow.camera.top = 50;
 light.shadow.camera.bottom = -50;
 scene.add(light);
 scene.fog = new THREE.Fog(0x555566, 0, 32);
-// scene.fog = new THREE.Fog(0x777777, 0, 64);
-// const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-// ground.receiveShadow = true;
-scene.add(ground);
 
-// ground.rotation.x = -Math.PI / 2;
-// ground.position.set(32, 0, 32);
+scene.add(ground);
 
 // Make the renderer responsive
 window.addEventListener('resize', () => {
@@ -104,26 +100,24 @@ function makeSkyBox() {
   scene.background = texture;
 }
 
-let maxSpeedForward = 0.11;
+let maxSpeedForward = 0.125;
 let maxSpeedReverse = -0.01;
-let turnLeft = false;
 
 let speedInc = 0.003;
 let thetaInc = 0.002; // Steering sensitivity
-let cameraWhirl = 0;
-let distanceCamera = 1;
+
 drifting = false;
 let oldTheta = 0;
 function checkKeyboard() {
   // Theta steering control
   if (keyboard['ArrowLeft'] || keyboard['a']) {
     thetaDelta -= thetaInc;
-    speed *= 0.99;
+    speed *= 0.98;
     if (drifting) playSample('screech');
   }
   if (keyboard['ArrowRight'] || keyboard['d']) {
     thetaDelta += thetaInc;
-    speed *= 0.99;
+    speed *= 0.98;
     if (drifting) playSample('screech');
   }
   if (keyboard['w']) {
@@ -135,8 +129,8 @@ function checkKeyboard() {
 
   // Speed control
   if (keyboard['ArrowUp'] || keyboard['w']) {
-    if (speed > 0.01) speed *= 1 + (maxSpeedForward - speed) * 0.25;
-    else speed += 0.001;
+    if (speed > 0.01) speed *= 1 + (maxSpeedForward - speed) * 0.33;
+    else speed += 0.00125;
     if (drifting) playSample('screech');
   }
 
@@ -145,14 +139,11 @@ function checkKeyboard() {
     else speed -= speed > maxSpeedReverse ? 0.001 : 0;
   }
 
-  // console.log('theta:', thetaDelta.toFixed(4), 'speed:', speed.toFixed(4));
-  // speed 0 -> 0.1
-  // abs(thetadelta) 0 -> 0.025
   if (speed * Math.abs(thetaDelta) > 0.0015) {
     console.log('[!] Burning rubber baby!', Math.random().toFixed(2));
     drifting = true;
     // driftTheta += Math.abs(driftTheta) > 0.01 ? 0.005 : 0.002;
-    driftTheta += Math.abs(driftTheta < 0.5)
+    driftTheta += Math.abs(driftTheta < 1)
       ? 0.01 * (oldTheta < theta ? 1 : -1)
       : 0;
   } else drifting = false;
@@ -178,26 +169,21 @@ document.addEventListener('touchmove', (event) => {
     if (dx > 0) {
       console.log('turning left...');
       thetaDelta += thetaInc;
-      // speed *= 0.99;
     } else {
       console.log('turning right...');
       thetaDelta -= thetaInc;
-      // speed *= 0.99;
     }
   }
-  // else
-  {
-    let dy = touchEndY - touchStartY;
-    if (Math.abs(dy) > 10) {
-      if (dy > 0) {
-        speed -= 0.0025;
-        playSample('screech');
-      } else {
-        // speed += 0.0025;
-        if (speed > 0.01) speed *= 1 + (maxSpeedForward - speed) * 0.25;
-        else speed += 0.001;
-        if (drifting) playSample('screech');
-      }
+  let dy = touchEndY - touchStartY;
+  if (Math.abs(dy) > 20) {
+    if (dy > 0) {
+      speed -= 0.005;
+      playSample('screech');
+    } else {
+      // speed += 0.0025;
+      if (speed > 0.01) speed *= 1 + (maxSpeedForward - speed) * 0.25;
+      else speed += 0.001;
+      if (drifting) playSample('screech');
     }
   }
 });
